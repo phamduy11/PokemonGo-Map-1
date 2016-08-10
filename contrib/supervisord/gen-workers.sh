@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Name of coords file. If you do not have one use location_generator.py -or 
+# Name of coords file. If you do not have one use location_generator.py -or
 coords="coords.txt"
 
 # Webserver Location
@@ -18,24 +18,14 @@ auth="ptc" # The auth you use for all the accounts
 st=5       # Step Count per worker
 sd=5       # Scan Delay per account
 ld=1       # Login Delay per account
-directory='/path/to/your/runserver/directory/' # Path to the folder containing runserver.py
+directory='/path/to/your/runserver/directory/' # Path to the folder containing runserver.py **NOTICE THE TRAILING /**
 
 # Check to see if supervisor folder/subfolder exists if not make it
 if [ ! -d ~/supervisor/hex$hexnum ]; then
-  mkdir -p supervisor/hex$hexnum
+  mkdir -p ~/supervisor/hex$hexnum
 fi
 
-# Copy supervisor files to ~/supervisor for first install or to reset (deleting supervisord.conf)
-if [ ! -f ~/supervisor/supervisord.conf ]; then
-  cp supervisord.conf ~/supervisor/supervisord.conf
-  sed -i "s,DIRECTORY,$directory," "$HOME/supervisor/supervisord.conf"
-  cp gen-workers.sh ~/supervisor/gen-workers.sh
-  cp template.ini ~/supervisor/template.ini
-  cd "$HOME/supervisor" || exit 1
-  exit 0
-fi
-
-# Change Directory to ~/supervisor
+# Change Directory to ~/supervisor in script subshell
 cd "$HOME/supervisor" || exit 1
 
 # Cleaning up directory
@@ -45,7 +35,7 @@ rm -f hex$hexnum/*.ini
 while read -r line; do
   ((worker++))
   printf -v n %02d $worker
-  cp template.ini "procs.d/worker_$n.ini"
+  cp template.ini "hex$hexnum/worker_$n.ini"
   user=$(for (( i = 1; i <= numacct; i++ )) do
            echo -n "-u ACCT$i "
          done)
@@ -64,11 +54,10 @@ while read -r line; do
   ((acct1+=numacct))
 done < $coords
 
-cp supervisord.conf ~/supervisor/supervisord.conf
 sed -i "s,DIRECTORY,$directory," "$HOME/supervisor/supervisord.conf"
 sed -i "s/LOC/$initloc/" "$HOME/supervisor/supervisord.conf"
 
 # Adding the folder to supervisord.conf [inclues]
-if [ -z grep -i $("hex$hexnum/\*.ini" supervisord.conf) ]; then
+if [ -z $(grep -i "hex$hexnum/\*.ini" supervisord.conf) ]; then
   echo "files = hex$hexnum/*.ini" >> supervisord.conf
 fi
